@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Attendance;
 use App\Models\Course;
+use App\Services\Ai\AttendanceInsightsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -25,7 +26,11 @@ class AttendanceController extends Controller
 
         $attendances = $query->get()->groupBy(fn (Attendance $a) => $a->date->toDateString());
 
-        return view('attendance.index', compact('course', 'attendances'));
+        $insights = $user->can('mark', [Attendance::class, $course])
+            ? AttendanceInsightsService::cached($course)
+            : null;
+
+        return view('attendance.index', compact('course', 'attendances', 'insights'));
     }
 
     /** Show the "mark attendance" form for a given date (defaults to today). */

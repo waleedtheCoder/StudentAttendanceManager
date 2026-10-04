@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AiController;
 use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\CourseController;
@@ -38,6 +39,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/assignments/{assignment}/submissions', [SubmissionController::class, 'store'])->name('submissions.store');
     Route::put('/submissions/{submission}/grade', [SubmissionController::class, 'grade'])->name('submissions.grade');
     Route::get('/submissions/{submission}/download', [SubmissionController::class, 'download'])->name('submissions.download');
+
+    // AI features (Claude)
+    Route::post('/courses/{course}/attendance/insights', [AiController::class, 'attendanceInsights'])->name('courses.attendance.insights');
+    Route::post('/submissions/{submission}/feedback-draft', [AiController::class, 'feedbackDraft'])->name('submissions.feedback-draft');
+    Route::post('/ask', [AiController::class, 'ask'])->middleware('role:teacher,admin')->name('ai.ask');
 });
 
 require __DIR__.'/auth.php';

@@ -44,12 +44,26 @@
                                     <a href="{{ route('submissions.download', $submission) }}" class="text-indigo-600 hover:underline">Download</a>
                                 </td>
                                 <td class="px-6 py-3 text-sm">
-                                    <form method="POST" action="{{ route('submissions.grade', $submission) }}" class="flex items-center gap-2">
+                                    <form method="POST" action="{{ route('submissions.grade', $submission) }}" class="space-y-2"
+                                          x-data="feedbackDraft(@js(route('submissions.feedback-draft', $submission)))">
                                         @csrf
                                         @method('PUT')
-                                        <input type="number" name="grade" min="0" max="100" value="{{ $submission->grade }}"
-                                               class="w-20 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm" placeholder="—" required>
-                                        <button class="text-indigo-600 hover:underline text-sm">Save</button>
+                                        <div class="flex items-center gap-2">
+                                            <input type="number" name="grade" min="0" max="100" value="{{ $submission->grade }}" x-ref="grade"
+                                                   class="w-20 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm" placeholder="—" required>
+                                            <button class="text-indigo-600 hover:underline text-sm">Save</button>
+                                            @if ($aiEnabled)
+                                                <button type="button" x-on:click="draft" x-bind:disabled="loading"
+                                                        class="ml-auto px-2 py-1 bg-indigo-50 text-indigo-700 text-xs rounded-md hover:bg-indigo-100 disabled:opacity-50">
+                                                    <span x-show="!loading">Draft with AI</span>
+                                                    <span x-show="loading" x-cloak>Drafting…</span>
+                                                </button>
+                                            @endif
+                                        </div>
+                                        <textarea name="feedback" rows="2" x-ref="feedback" placeholder="Feedback for the student (optional)"
+                                                  class="w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">{{ $submission->feedback }}</textarea>
+                                        <p x-show="error" x-text="error" x-cloak class="text-xs text-red-600"></p>
+                                        <p x-show="drafted" x-cloak class="text-xs text-gray-500">AI draft filled in. Review and edit it, then click Save.</p>
                                     </form>
                                 </td>
                             </tr>
@@ -63,4 +77,29 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function feedbackDraft(url) {
+            return {
+                loading: false,
+                error: '',
+                drafted: false,
+                async draft() {
+                    this.loading = true;
+                    this.error = '';
+                    this.drafted = false;
+                    try {
+                        const { data } = await window.axios.post(url);
+                        this.$refs.grade.value = data.grade;
+                        this.$refs.feedback.value = data.feedback;
+                        this.drafted = true;
+                    } catch (e) {
+                        this.error = e.response?.data?.message ?? 'Could not draft feedback. Please try again.';
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+            };
+        }
+    </script>
 </x-app-layout>
